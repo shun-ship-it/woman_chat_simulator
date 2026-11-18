@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#06c755">
+<title>Chat - メッセージ</title>
+<style>
+:root{--green:#06c755;--bg:#8eaaa0;--ink:#222}
+*{box-sizing:border-box}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;background:#f4f5f6;color:var(--ink)}
+button,input{font:inherit}
+.app{height:100dvh;max-width:520px;margin:auto;background:#fff;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 0 24px #0001}
+.top{height:58px;background:#fff;display:flex;align-items:center;padding:0 14px;gap:12px;border-bottom:1px solid #eee;flex-shrink:0}
+.back{font-size:25px;color:#333;border:0;background:none;padding:0 4px}
+.avatar{width:39px;height:39px;border-radius:50%;display:grid;place-items:center;font-size:22px;background:#eee;flex-shrink:0}
+.topname{font-weight:700;font-size:16px;flex:1}
+.topsub{font-size:11px;color:#888;font-weight:400;margin-top:2px}
+.topactions{font-size:20px;letter-spacing:8px;color:#555}
+.content{flex:1;min-height:0;display:flex;position:relative}
+.sidebar{width:100%;display:flex;flex-direction:column;background:white}
+.search{margin:12px 14px;padding:10px 14px;border-radius:9px;background:#f2f3f5;color:#999;font-size:13px}
+.section{padding:8px 16px;color:#888;font-size:12px;font-weight:600}
+.chatlist{overflow:auto}
+.chatrow{display:flex;gap:12px;padding:12px 15px;align-items:center;border-bottom:1px solid #f2f2f2;cursor:pointer}
+.chatrow.active{background:#f3fbf6}
+.chatrow .avatar{width:49px;height:49px;font-size:26px}
+.chatmeta{min-width:0;flex:1}
+.chatline{display:flex;justify-content:space-between;gap:8px}
+.chatname{font-weight:650;font-size:15px}
+.time{font-size:10px;color:#999;white-space:nowrap}
+.preview{font-size:12px;color:#888;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:5px}
+.unread{background:var(--green);color:white;border-radius:20px;min-width:19px;height:19px;padding:0 5px;font-size:11px;display:grid;place-items:center}
+.chatview{display:none;position:absolute;inset:0;background:#8eaaa0;flex-direction:column}
+.chatview.show{display:flex}
+.chathead{height:57px;background:#fff;display:flex;align-items:center;padding:0 12px;gap:10px;border-bottom:1px solid #eee}
+.chathead .avatar{width:36px;height:36px;font-size:20px}
+.chathead .name{font-weight:700;flex:1}
+.messages{flex:1;overflow:auto;padding:15px 12px 18px;background-color:#8eaaa0;background-image:radial-gradient(#ffffff14 1px,transparent 1px);background-size:18px 18px}
+.day{text-align:center;font-size:10px;color:#fff;background:#78958a;width:max-content;margin:0 auto 16px;padding:5px 12px;border-radius:12px}
+.msgrow{display:flex;align-items:flex-end;gap:6px;margin:11px 0}
+.msgrow.me{justify-content:flex-end}
+.msgavatar{width:29px;height:29px;border-radius:50%;display:grid;place-items:center;background:#eee;font-size:17px;flex-shrink:0}
+.bubble{max-width:76%;padding:10px 12px;border-radius:4px 15px 15px 15px;background:white;font-size:14px;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere;box-shadow:0 1px 1px #0001}
+.me .bubble{background:#a5f078;border-radius:15px 4px 15px 15px}
+.stamp{font-size:9px;color:#f8fff9;white-space:nowrap;margin-bottom:2px;text-shadow:0 1px 2px #555}
+.typing{font-size:11px;color:#fff;background:#78958a;padding:6px 10px;border-radius:12px;width:max-content;margin:6px 0 10px 36px;display:none}
+.composer{background:#f8f8f8;border-top:1px solid #e5e5e5;padding:9px 10px;display:flex;gap:8px;align-items:center}
+.plus{border:0;background:none;font-size:25px;color:#555}
+#reply{border:0;outline:0;background:#fff;border-radius:20px;padding:11px 14px;flex:1;min-width:0;font-size:14px}
+.send{border:0;background:var(--green);color:white;border-radius:18px;padding:8px 14px;font-weight:650}
+.bottomnav{height:58px;border-top:1px solid #eee;display:flex;justify-content:space-around;align-items:center;background:#fff;flex-shrink:0}
+.navitem{font-size:10px;color:#888;text-align:center;position:relative}
+.navitem b{display:block;font-size:21px;font-weight:400;margin-bottom:2px}
+.navitem.active{color:var(--green)}
+.toast{position:fixed;top:12px;left:50%;transform:translate(-50%,-90px);background:#242424;color:#fff;border-radius:24px;padding:10px 16px;display:flex;gap:9px;align-items:center;font-size:13px;box-shadow:0 5px 22px #0003;transition:transform .35s;z-index:10;width:min(92%,390px)}
+.toast.show{transform:translate(-50%,0)}
+.toast .tiny{font-size:20px}
+.settings{padding:14px;border-top:1px solid #eee;background:#fff;font-size:12px;color:#777;display:flex;justify-content:space-between;align-items:center}
+.toggle{accent-color:var(--green)}
+@media(min-width:650px){.app{height: min(900px,100dvh);margin:20px auto;border-radius:16px}.chatview{position:relative;display:none}.chatview.show{display:flex}.sidebar{width:100%}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <button class="back" aria-label="戻る">‹</button>
+    <div class="topname">トーク <div class="topsub">メッセージシミュレーター</div></div>
+    <div class="topactions">⌕ ⋮</div>
+  </header>
+  <main class="content">
+    <section class="sidebar" id="sidebar">
+      <div class="search">⌕　友だち・トークを検索</div>
+      <div class="section">すべてのトーク</div>
+      <div class="chatlist" id="chatlist"></div>
+      <div class="settings">
+        <span>メッセージ自動受信</span>
+        <label><input class="toggle" type="checkbox" id="auto" checked></label>
+      </div>
+    </section>
+    <section class="chatview" id="chatview">
+      <div class="chathead">
+        <button class="back" id="back">‹</button>
+        <div class="avatar" id="headavatar">🌷</div>
+        <div class="name" id="headname">名前</div>
+        <div class="topactions">⌕ ☎ ⋮</div>
+      </div>
+      <div class="messages" id="messages">
+        <div class="day">今日</div>
+      </div>
+      <div class="typing" id="typing">入力中...</div>
+      <form class="composer" id="form">
+        <button type="button" class="plus">＋</button>
+        <input id="reply" placeholder="メッセージを入力" autocomplete="off">
+        <button class="send" type="submit">送信</button>
+      </form>
+    </section>
+  </main>
+  <nav class="bottomnav">
+    <div class="navitem"><b>♧</b>ホーム</div>
+    <div class="navitem active"><b>▤</b>トーク</div>
+    <div class="navitem"><b>◉</b>VOOM</div>
+    <div class="navitem"><b>◷</b>ニュース</div>
+    <div class="navitem"><b>☻</b>設定</div>
+  </nav>
+</div>
+<div class="toast" id="toast"><span class="tiny" id="toastavatar">🌷</span><span><b id="toastname">メッセージ</b><br><span id="toasttext">新着メッセージ</span></span></div>
+<script>
+const people=[
+ {id:0,name:"美咲",emoji:"🌷",color:"#f8dfe8",messages:["ねえねえ、今なにしてる？","今日めっちゃ寒くない？笑","そういえばこの前話してた映画見たよ！","暇だったらちょっと話そ〜","おはよう！今日も一日がんばろ☺️","それ聞いてほしいんだけど笑"]},
+ {id:1,name:"莉子",emoji:"🐰",color:"#f7e8d5",messages:["急にごめん！聞きたいことある！","おすすめの曲とかある？","最近ずっと同じ曲聴いてる笑","今日の空きれいだったよ📷","また話したくなって送っちゃった"]},
+ {id:2,name:"結衣",emoji:"🧸",color:"#e9e2f7",messages:["やっほー！元気？","さっき面白い動画見つけた笑","週末って何してること多い？","そういう話できるの楽しい！","ねむいけどまだ寝たくない〜"]},
+ {id:3,name:"さくら",emoji:"🍓",color:"#f8e0df",messages:["ちょっと雑談しよ〜","今日学校でめっちゃ笑ったことあってさ","返信ゆっくりで大丈夫だよ！","最近なにかハマってる？","またおすすめ教えてね！"]},
+ {id:4,name:"菜々",emoji:"🐱",color:"#e0edf4",messages:["こんばんは〜！","そういえばプロフィール変えた？","音楽の話したい気分！","その考え方いいね","なんか話してたら時間あっという間笑"]},
+ {id:5,name:"ひより",emoji:"🌻",color:"#f6edce",messages:["おつかれさま！","今日も一日長かった〜","ちょっと聞いてほしいことある！","明日もいい日になるといいね","また時間あるとき話そうね☺️"]}
+];
+let active=null, counts=people.map(()=>0), last=people.map(()=>"メッセージはまだありません"), times=people.map(()=>"");
+let toastTimer;
+const $=id=>document.getElementById(id);
+function clock(){return new Date().toLocaleTimeString("ja-JP",{hour:"2-digit",minute:"2-digit"})}
+function renderList(){
+ $("chatlist").innerHTML=people.map(p=>`<div class="chatrow ${active===p.id?'active':''}" data-id="${p.id}">
+ <div class="avatar" style="background:${p.color}">${p.emoji}</div><div class="chatmeta">
+ <div class="chatline"><span class="chatname">${p.name}</span><span class="time">${times[p.id]||""}</span></div>
+ <div class="chatline"><span class="preview">${escapeHTML(last[p.id])}</span>${counts[p.id]?`<span class="unread">${counts[p.id]}</span>`:""}</div>
+ </div></div>`).join("");
+ document.querySelectorAll(".chatrow").forEach(el=>el.addEventListener("click",()=>openChat(+el.dataset.id)));
+}
+function escapeHTML(s){return s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+function openChat(id){
+ active=id;counts[id]=0;
+ $("sidebar").style.display="none";$("chatview").classList.add("show");
+ const p=people[id];$("headname").textContent=p.name;$("headavatar").textContent=p.emoji;$("headavatar").style.background=p.color;
+ $("messages").innerHTML='<div class="day">今日</div>';
+ const history=window.chatHistory[id]||[];
+ if(!history.length){addMessage("them","こんにちは！これからよろしくね☺️",id,false)}
+ else history.forEach(m=>addMessage(m.who,m.text,id,false));
+ renderList();$("messages").scrollTop=$("messages").scrollHeight;
+}
+function closeChat(){active=null;$("chatview").classList.remove("show");$("sidebar").style.display="flex";renderList()}
+$("back").addEventListener("click",closeChat);
+window.chatHistory=people.map(()=>[]);
+function addMessage(who,text,id=active,save=true){
+ const p=people[id];if(save)window.chatHistory[id].push({who,text});
+ const row=document.createElement("div");row.className="msgrow "+(who==="me"?"me":"");
+ if(who==="them"){const av=document.createElement("div");av.className="msgavatar";av.style.background=p.color;av.textContent=p.emoji;row.appendChild(av)}
+ const bubble=document.createElement("div");bubble.className="bubble";bubble.textContent=text;row.appendChild(bubble);
+ const stamp=document.createElement("div");stamp.className="stamp";stamp.textContent=clock();row.appendChild(stamp);
+ $("messages").appendChild(row);$("messages").scrollTop=$("messages").scrollHeight;
+ last[id]=text;times[id]=clock();renderList();
+}
+function receive(){
+ const candidates=people.filter(p=>p.id!==active);
+ const p=candidates[Math.floor(Math.random()*candidates.length)];
+ const msg=p.messages[Math.floor(Math.random()*p.messages.length)];
+ window.chatHistory[p.id].push({who:"them",text:msg});
+ last[p.id]=msg;times[p.id]=clock();counts[p.id]++;
+ renderList();showToast(p,msg);
+ if(active===p.id)addMessage("them",msg,p.id,false);
+}
+function showToast(p,msg){
+ $("toastavatar").textContent=p.emoji;$("toastname").textContent=p.name;$("toasttext").textContent=msg;
+ $("toast").classList.add("show");clearTimeout(toastTimer);toastTimer=setTimeout(()=>$("toast").classList.remove("show"),2800);
+}
+$("form").addEventListener("submit",e=>{
+ e.preventDefault();const value=$("reply").value.trim();if(!value||active===null)return;
+ addMessage("me",value);$("reply").value="";
+ const id=active;setTimeout(()=>{
+  if(active===id){const replies=["わかる！笑","そうなんだ！もっと聞きたい！","いいね〜！","それめっちゃ気になる！","たしかに！☺️","返信ありがとう〜！"];addMessage("them",replies[Math.floor(Math.random()*replies.length)],id)}
+  else {const replies=["わかる！笑","そうなんだ！","いいね〜！","また話そ！"];const reply=replies[Math.floor(Math.random()*replies.length)];window.chatHistory[id].push({who:"them",text:reply});last[id]=reply;times[id]=clock();counts[id]++;renderList();showToast(people[id],reply)}
+ },1200+Math.random()*1800);
+});
+$("auto").addEventListener("change",()=>{if($("auto").checked)startAuto();else clearInterval(autoTimer)});
+let autoTimer;
+function startAuto(){clearInterval(autoTimer);autoTimer=setInterval(()=>{if($("auto").checked)receive()},4200+Math.random()*2400)}
+renderList();startAuto();
+</script>
+</body>
+</html>
